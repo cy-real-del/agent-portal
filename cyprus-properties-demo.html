@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyprusProperties Pro с Картами</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .leaflet-container {
+            height: 100%;
+            width: 100%;
+            border-radius: 8px;
+        }
+        .property-popup {
+            max-width: 300px;
+        }
+        .property-popup img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+        .complex-marker {
+            background: #C5A880;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .property-marker {
+            background: #10B981;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .property-marker.reserved {
+            background: #F59E0B;
+        }
+        .property-marker.sold {
+            background: #EF4444;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // Реальные данные объектов с координатами
+        const realProperties = [
+            {
+                id: '451',
+                title: 'Эксклюзивный Комплекс в 50 м. от Моря - Киссонерга',
+                type: 'villa',
+                status: 'available',
+                price: 1350000,
+                area: { total: 232 },
+                rooms: 3,
+                bathrooms: 2,
+                address: {
+                    region: 'Paphos',
+                    area: 'Kissonerga',
+                    street: 'Beachfront Location'
+                },
+                coordinates: { lat: 34.826944550724, lng: 32.389712333679 },
+                images: ['https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400'],
+                developer: 'Antaria Development',
+                complexId: 'ALBUS_PALACE',
+                distanceToSea: 50,
+                features: ['Вид на море', 'Бассейн', 'Охрана', 'У моря']
+            },
+            {
+                id: '4189',
+                title: '3-х Спальные Апартаменты в Туристической Зоне',
+                type: 'apartment',
+                status: 'available',
+                price: 580000,
+                area: { total: 135 },
+                rooms: 3,
+                bathrooms: 2,
+                address: {
+                    region: 'Limassol',
+                    area: 'Tourist Area',
+                    street: 'Panorama Complex'
+                },
+                coordinates: { lat: 34.6719, lng: 33.0467 },
+                images: ['https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=400'],
+                developer: 'Athanasiou Group',
+                complexId: 'PANORAMA_RESIDENCE',
+                distanceToSea: 400,
+                features: ['Вид на море', 'Бассейн', 'Тренажерный зал']
+            },
+            {
+                id: '3256',
+                title: 'Пентхаус с Панорамным Видом на Марину',
+                type: 'apartment',
+                status: 'available',
+                price: 1250000,
+                area: { total: 165 },
+                rooms: 3,
+                bathrooms: 3,
+                address: {
+                    region: 'Limassol',
+                    area: 'Marina',
+                    street: 'Marina Boulevard'
+                },
+                coordinates: { lat: 34.6719, lng: 33.0467 },
+                images: ['https://images.unsplash.com/photo-1613977257363-707ba9348227?w=400'],
+                developer: 'Cyprus Developers Ltd',
+                complexId: 'MARINA_GARDENS',
+                distanceToSea: 200,
+                features: ['Марина', 'Терраса', 'Консьерж']
+            },
+            {
+                id: '5127',
+                title: 'Современная Квартира в Центре Никосии',
+                type: 'apartment',
+                status: 'available',
+                price: 285000,
+                area: { total: 95 },
+                rooms: 2,
+                bathrooms: 1,
+                address: {
+                    region: 'Nicosia',
+                    area: 'City Center',
+                    street: 'Ledra Street'
+                },
+                coordinates: { lat: 35.1856, lng: 33.3823 },
+                images: ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400'],
+                developer: 'Urban Developments',
+                complexId: 'CITY_HEIGHTS',
+                distanceToSea: 45000,
+                features: ['Центр города', 'Паркинг', 'Охрана']
+            },
+            {
+                id: '6783',
+                title: 'Эксклюзивная Вилла на Первой Линии',
+                type: 'villa',
+                status: 'reserved',
+                price: 1850000,
+                area: { total: 320 },
+                rooms: 5,
+                bathrooms: 4,
+                address: {
+                    region: 'Larnaca',
+                    area: 'Dhekelia',
+                    street: 'Beachfront Road'
+                },
+                coordinates: { lat: 34.9823, lng: 33.6254 },
+                images: ['https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400'],
+                developer: 'Luxury Estates Cyprus',
+                complexId: 'SEAFRONT_ESTATE',
+                distanceToSea: 0,
+                features: ['Частный пляж', 'Причал для яхт', 'Сад']
+            },
+            {
+                id: '8912',
+                title: 'Студия в Курортном Комплексе',
+                type: 'studio',
+                status: 'available',
+                price: 165000,
+                area: { total: 42 },
+                rooms: 1,
+                bathrooms: 1,
+                address: {
+                    region: 'Paphos',
+                    area: 'Kato Paphos',
+                    street: 'Tourist Area'
+                },
+                coordinates: { lat: 34.7588, lng: 32.4054 },
+                images: ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400'],
+                developer: 'Resort Properties Ltd',
+                complexId: 'GOLDEN_COAST',
+                distanceToSea: 800,
+                features: ['Курорт', 'Бассейн', 'Мебель включена']
+            }
+        ];
+
+        const realComplexes = [
+            {
+                id: 'ALBUS_PALACE',
+                name: 'Albus Palace',
+                developer: 'Antaria Development',
+                region: 'Paphos',
+                area: 'Kissonerga',
+                coordinates: { lat: 34.826944550724, lng: 32.389712333679 },
+                priceRange: { min: 1350000, max: 1350000 },
+                totalUnits: 11,
+                availableUnits: 1
+            },
+            {
+                id: 'PANORAMA_RESIDENCE',
+                name: 'Panorama Residence',
+                developer: 'Athanasiou Group',
+                region: 'Limassol',
+                area: 'Tourist Area',
+                coordinates: { lat: 34.6719, lng: 33.0467 },
+                priceRange: { min: 580000, max: 580000 },
+                totalUnits: 45,
+                availableUnits: 1
+            },
+            {
+                id: 'MARINA_GARDENS',
+                name: 'Marina Gardens',
+                developer: 'Cyprus Developers Ltd',
+                region: 'Limassol',
+                area: 'Marina',
+                coordinates: { lat: 34.6719, lng: 33.0467 },
+                priceRange: { min: 1250000, max: 1250000 },
+                totalUnits: 28,
+                availableUnits: 1
+            },
+            {
+                id: 'CITY_HEIGHTS',
+                name: 'City Heights',
+                developer: 'Urban Developments',
+                region: 'Nicosia',
+                area: 'City Center',
+                coordinates: { lat: 35.1856, lng: 33.3823 },
+                priceRange: { min: 285000, max: 285000 },
+                totalUnits: 60,
+                availableUnits: 1
+            },
+            {
+                id: 'SEAFRONT_ESTATE',
+                name: 'Seafront Estate',
+                developer: 'Luxury Estates Cyprus',
+                region: 'Larnaca',
+                area: 'Dhekelia',
+                coordinates: { lat: 34.9823, lng: 33.6254 },
+                priceRange: { min: 1850000, max: 1850000 },
+                totalUnits: 12,
+                availableUnits: 0
+            },
+            {
+                id: 'GOLDEN_COAST',
+                name: 'Golden Coast',
+                developer: 'Resort Properties Ltd',
+                region: 'Paphos',
+                area: 'Kato Paphos',
+                coordinates: { lat: 34.7588, lng: 32.4054 },
+                priceRange: { min: 165000, max: 165000 },
+                totalUnits: 80,
+                availableUnits: 1
+            }
+        ];
+
+        const MapComponent = ({ properties, complexes, viewMode, selectedProperty, onPropertySelect }) => {
+            const mapRef = useRef(null);
+            const mapInstanceRef = useRef(null);
+            const markersRef = useRef([]);
+
+            useEffect(() => {
+                if (!mapRef.current || mapInstanceRef.current) return;
+
+                // Инициализация карты
+                const map = L.map(mapRef.current).setView([34.9, 33.0], 9);
+                
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+
+                mapInstanceRef.current = map;
+
+                return () => {
+                    if (mapInstanceRef.current) {
+                        mapInstanceRef.current.remove();
+                        mapInstanceRef.current = null;
+                    }
+                };
+            }, []);
+
+            useEffect(() => {
+                if (!mapInstanceRef.current) return;
+
+                // Очистка предыдущих маркеров
+                markersRef.current.forEach(marker => {
+                    mapInstanceRef.current.removeLayer(marker);
+                });
+                markersRef.current = [];
+
+                if (viewMode === 'complexes') {
+                    // Показываем маркеры комплексов
+                    complexes.forEach(complex => {
+                        const icon = L.divIcon({
+                            html: `<div class="complex-marker">${complex.totalUnits}</div>`,
+                            className: 'custom-div-icon',
+                            iconSize: [30, 30],
+                            iconAnchor: [15, 15]
+                        });
+
+                        const marker = L.marker([complex.coordinates.lat, complex.coordinates.lng], { icon })
+                            .addTo(mapInstanceRef.current);
+
+                        const popupContent = `
+                            <div class="property-popup">
+                                <h3 style="font-weight: bold; margin-bottom: 8px; color: #C5A880;">${complex.name}</h3>
+                                <p><strong>Застройщик:</strong> ${complex.developer}</p>
+                                <p><strong>Регион:</strong> ${complex.region}, ${complex.area}</p>
+                                <p><strong>Цена:</strong> €${complex.priceRange.min.toLocaleString()}</p>
+                                <p><strong>Объектов:</strong> ${complex.availableUnits} из ${complex.totalUnits} доступно</p>
+                            </div>
+                        `;
+
+                        marker.bindPopup(popupContent);
+                        markersRef.current.push(marker);
+                    });
+                } else {
+                    // Показываем маркеры объектов
+                    properties.forEach(property => {
+                        const markerClass = property.status === 'available' ? 'property-marker' :
+                                           property.status === 'reserved' ? 'property-marker reserved' :
+                                           'property-marker sold';
+
+                        const icon = L.divIcon({
+                            html: `<div class="${markerClass}"></div>`,
+                            className: 'custom-div-icon',
+                            iconSize: [25, 25],
+                            iconAnchor: [12, 12]
+                        });
+
+                        const marker = L.marker([property.coordinates.lat, property.coordinates.lng], { icon })
+                            .addTo(mapInstanceRef.current);
+
+                        const popupContent = `
+                            <div class="property-popup">
+                                <img src="${property.images[0]}" alt="${property.title}" />
+                                <h3 style="font-weight: bold; margin-bottom: 8px; color: #C5A880;">${property.title}</h3>
+                                <p><strong>Цена:</strong> €${property.price.toLocaleString()}</p>
+                                <p><strong>Площадь:</strong> ${property.area.total} м²</p>
+                                <p><strong>Комнаты:</strong> ${property.rooms}</p>
+                                <p><strong>Регион:</strong> ${property.address.region}</p>
+                                <p><strong>До моря:</strong> ${property.distanceToSea} м</p>
+                                <div style="margin-top: 8px;">
+                                    ${property.features.map(f => `<span style="background: #F3F4F6; padding: 2px 6px; border-radius: 12px; font-size: 11px; margin-right: 4px;">${f}</span>`).join('')}
+                                </div>
+                            </div>
+                        `;
+
+                        marker.bindPopup(popupContent);
+                        
+                        marker.on('click', () => {
+                            if (onPropertySelect) {
+                                onPropertySelect(property);
+                            }
+                        });
+
+                        markersRef.current.push(marker);
+                    });
+                }
+
+                // Подгонка карты под маркеры
+                if (markersRef.current.length > 0) {
+                    const group = new L.featureGroup(markersRef.current);
+                    mapInstanceRef.current.fitBounds(group.getBounds(), { padding: [20, 20] });
+                }
+            }, [properties, complexes, viewMode, onPropertySelect]);
+
+            // Центрирование на выбранном объекте
+            useEffect(() => {
+                if (selectedProperty && mapInstanceRef.current) {
+                    mapInstanceRef.current.setView(
+                        [selectedProperty.coordinates.lat, selectedProperty.coordinates.lng], 
+                        15,
+                        { animate: true }
+                    );
+                }
+            }, [selectedProperty]);
+
+            return <div ref={mapRef} className="w-full h-full min-h-[400px]" />;
+        };
+
+        const PropertyCard = ({ property, isSelected, onSelect, onToggleSelection }) => (
+            <div 
+                className={`bg-white rounded-lg shadow-md overflow-hidden transition-all cursor-pointer ${
+                    isSelected ? 'ring-2 ring-yellow-400 shadow-lg' : 'hover:shadow-lg'
+                }`}
+                onClick={() => onSelect(property)}
+            >
+                <div className="relative">
+                    <img 
+                        src={property.images[0]} 
+                        alt={property.title}
+                        className="w-full h-32 object-cover"
+                    />
+                    <div className="absolute top-2 right-2">
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            property.status === 'available' ? 'bg-green-100 text-green-800' :
+                            property.status === 'reserved' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                        }`}>
+                            {property.status === 'available' ? 'Доступно' :
+                             property.status === 'reserved' ? 'Резерв' : 'Продано'}
+                        </span>
+                    </div>
+                    <div className="absolute top-2 left-2">
+                        <span className="text-white px-2 py-1 rounded text-xs font-medium" style={{backgroundColor: '#C5A880'}}>
+                            {property.id}
+                        </span>
+                    </div>
+                </div>
+                
+                <div className="p-3">
+                    <h3 className="font-semibold text-sm mb-2 line-clamp-2">{property.title}</h3>
+                    
+                    <div className="flex items-center text-gray-600 text-xs mb-2">
+                        <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                        </svg>
+                        {property.address.region}, {property.address.area}
+                    </div>
+                    
+                    <div className="text-lg font-bold mb-2" style={{color: '#C5A880'}}>
+                        €{property.price.toLocaleString()}
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-1 text-xs text-gray-600 mb-2">
+                        <div>{property.rooms} комн.</div>
+                        <div>{property.area.total} м²</div>
+                        <div>{property.distanceToSea}м до моря</div>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-1 mb-2">
+                        {property.features.slice(0, 2).map((feature, index) => (
+                            <span key={index} className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs">
+                                {feature}
+                            </span>
+                        ))}
+                    </div>
+                    
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleSelection(property.id);
+                        }}
+                        className="w-full px-3 py-2 rounded text-sm font-medium transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    >
+                        Добавить в подборку
+                    </button>
+                </div>
+            </div>
+        );
+
+        const ComplexCard = ({ complex, onSelect }) => (
+            <div 
+                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                onClick={() => onSelect(complex)}
+            >
+                <div className="p-4">
+                    <h3 className="font-semibold text-lg mb-2">{complex.name}</h3>
+                    
+                    <div className="flex items-center text-gray-600 text-sm mb-2">
+                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                        </svg>
+                        {complex.region}, {complex.area}
+                    </div>
+                    
+                    <div className="text-sm text-gray-600 mb-2">
+                        <span className="font-medium">Застройщик:</span> {complex.developer}
+                    </div>
+                    
+                    <div className="text-lg font-bold mb-3" style={{color: '#C5A880'}}>
+                        €{complex.priceRange.min.toLocaleString()}
+                        {complex.priceRange.min !== complex.priceRange.max && ` - €${complex.priceRange.max.toLocaleString()}`}
+                    </div>
+                    
+                    <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">
+                            {complex.availableUnits} из {complex.totalUnits} доступно
+                        </span>
+                        <button className="px-3 py-1 text-sm rounded" style={{backgroundColor: '#F5F1EB', color: '#C5A880'}}>
+                            Подробнее
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const CyprusPropertiesApp = () => {
+            const [viewMode, setViewMode] = useState('complexes');
+            const [selectedProperty, setSelectedProperty] = useState(null);
+            const [selectedComplexId, setSelectedComplexId] = useState(null);
+            const [selectedProperties, setSelectedProperties] = useState([]);
+            const [searchTerm, setSearchTerm] = useState('');
+            const [priceRange, setPriceRange] = useState({ min: '', max: '' });
+            const [regionFilter, setRegionFilter] = useState('');
+
+            // Фильтрация
+            const filteredProperties = realProperties.filter(property => {
+                if (selectedComplexId && property.complexId !== selectedComplexId) return false;
+                
+                const matchesSearch = property.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                     property.address.region.toLowerCase().includes(searchTerm.toLowerCase());
+                const matchesRegion = !regionFilter || property.address.region === regionFilter;
+                const matchesPriceMin = !priceRange.min || property.price >= parseInt(priceRange.min);
+                const matchesPriceMax = !priceRange.max || property.price <= parseInt(priceRange.max);
+                
+                return matchesSearch && matchesRegion && matchesPriceMin && matchesPriceMax;
+            });
+
+            const filteredComplexes = realComplexes.filter(complex => {
+                const matchesSearch = complex.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                     complex.developer.toLowerCase().includes(searchTerm.toLowerCase());
+                const matchesRegion = !regionFilter || complex.region === regionFilter;
+                const matchesPriceMin = !priceRange.min || complex.priceRange.max >= parseInt(priceRange.min);
+                const matchesPriceMax = !priceRange.max || complex.priceRange.min <= parseInt(priceRange.max);
+                
+                return matchesSearch && matchesRegion && matchesPriceMin && matchesPriceMax;
+            });
+
+            const handlePropertySelect = (property) => {
+                setSelectedProperty(property);
+            };
+
+            const handleComplexSelect = (complex) => {
+                setSelectedComplexId(complex.id);
+                setViewMode('properties');
+                setSelectedProperty(null);
+            };
+
+            const togglePropertySelection = (propertyId) => {
+                setSelectedProperties(prev => 
+                    prev.includes(propertyId) 
+                        ? prev.filter(id => id !== propertyId)
+                        : [...prev, propertyId]
+                );
+            };
+
+            const resetFilters = () => {
+                setSelectedComplexId(null);
+                setViewMode('complexes');
+                setSelectedProperty(null);
+                setSearchTerm('');
+                setPriceRange({ min: '', max: '' });
+                setRegionFilter('');
+            };
+
+            return (
+                <div className="min-h-screen bg-gray-50">
+                    {/* Header */}
+                    <header className="bg-white shadow-sm border-b">
+                        <div className="max-w-7xl mx-auto px-4 py-4">
+                            <div className="flex justify-between items-center">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded" style={{backgroundColor: '#C5A880'}}></div>
+                                    <h1 className="text-xl font-bold text-gray-900">CyprusProperties Pro</h1>
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                    Интерактивные карты недвижимости Кипра
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div className="max-w-7xl mx-auto px-4 py-6">
+                        {/* Навигация и фильтры */}
+                        <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+                            <div className="flex flex-wrap gap-4 items-center mb-4">
+                                {/* Переключатель режима */}
+                                <div className="flex bg-gray-100 rounded-lg p-1">
+                                    <button
+                                        onClick={() => {
+                                            setViewMode('complexes');
+                                            setSelectedComplexId(null);
+                                            setSelectedProperty(null);
+                                        }}
+                                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                                            viewMode === 'complexes'
+                                                ? 'text-white'
+                                                : 'text-gray-600 hover:text-gray-900'
+                                        }`}
+                                        style={viewMode === 'complexes' ? {backgroundColor: '#C5A880'} : {}}
+                                    >
+                                        Комплексы ({filteredComplexes.length})
+                                    </button>
+                                    <button
+                                        onClick={() => setViewMode('properties')}
+                                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                                            viewMode === 'properties'
+                                                ? 'text-white'
+                                                : 'text-gray-600 hover:text-gray-900'
+                                        }`}
+                                        style={viewMode === 'properties' ? {backgroundColor: '#C5A880'} : {}}
+                                    >
+                                        Объекты ({filteredProperties.length})
+                                    </button>
+                                </div>
+
+                                {/* Хлебные крошки */}
+                                {selectedComplexId && (
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm text-gray-600">
+                                            Комплекс: <strong>{realComplexes.find(c => c.id === selectedComplexId)?.name}</strong>
+                                        </span>
+                                        <button
+                                            onClick={resetFilters}
+                                            className="text-sm text-gray-500 hover:text-gray-700"
+                                        >
+                                            ✕ Сбросить
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Фильтры */}
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        placeholder="Поиск по названию..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg"
+                                    />
+                                    <svg className="w-4 h-4 absolute left-3 top-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+
+                                <select 
+                                    value={regionFilter}
+                                    onChange={(e) => setRegionFilter(e.target.value)}
+                                    className="border border-gray-300 rounded-lg px-3 py-2"
+                                >
+                                    <option value="">Все регионы</option>
+                                    <option value="Limassol">Лимассол</option>
+                                    <option value="Paphos">Пафос</option>
+                                    <option value="Nicosia">Никосия</option>
+                                    <option value="Larnaca">Ларнака</option>
+                                </select>
+
+                                <input
+                                    type="number"
+                                    placeholder="Цена от"
+                                    value={priceRange.min}
+                                    onChange={(e) => setPriceRange({...priceRange, min: e.target.value})}
+                                    className="border border-gray-300 rounded-lg px-3 py-2"
+                                />
+
+                                <input
+                                    type="number"
+                                    placeholder="Цена до"
+                                    value={priceRange.max}
+                                    onChange={(e) => setPriceRange({...priceRange, max: e.target.value})}
+                                    className="border border-gray-300 rounded-lg px-3 py-2"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Панель выбранных объектов */}
+                        {selectedProperties.length > 0 && (
+                            <div className="border rounded-lg p-4 mb-6" style={{backgroundColor: '#F5F1EB', borderColor: '#C5A880'}}>
+                                <div className="flex justify-between items-center">
+                                    <span className="font-medium" style={{color: '#8B7355'}}>
+                                        Выбрано объектов: {selectedProperties.length}
+                                    </span>
+                                    <div className="flex gap-2">
+                                        <button
+                                            className="text-white px-4 py-2 rounded hover:opacity-90 transition-colors"
+                                            style={{backgroundColor: '#C5A880'}}
+                                            onClick={() => alert(`Подборка из ${selectedProperties.length} объектов готова!`)}
+                                        >
+                                            Создать подборку
+                                        </button>
+                                        <button
+                                            onClick={() => setSelectedProperties([])}
+                                            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors"
+                                        >
+                                            Очистить
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Основной контент */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Карта */}
+                            <div className="bg-white rounded-lg shadow-md p-4">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h2 className="text-lg font-semibold">Карта объектов</h2>
+                                    <div className="flex gap-2 text-xs">
+                                        <div className="flex items-center gap-1">
+                                            <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                                            <span>Доступно</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                                            <span>Резерв</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <div className="w-3 h-3 rounded-full" style={{backgroundColor: '#C5A880'}}></div>
+                                            <span>Комплексы</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="h-96">
+                                    <MapComponent 
+                                        properties={filteredProperties}
+                                        complexes={filteredComplexes}
+                                        viewMode={viewMode}
+                                        selectedProperty={selectedProperty}
+                                        onPropertySelect={handlePropertySelect}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Список объектов */}
+                            <div className="bg-white rounded-lg shadow-md p-4">
+                                <h2 className="text-lg font-semibold mb-4">
+                                    {viewMode === 'complexes' ? 'Жилые комплексы' : 'Объекты недвижимости'}
+                                </h2>
+                                
+                                <div className="space-y-4 max-h-96 overflow-y-auto">
+                                    {viewMode === 'complexes' ? (
+                                        filteredComplexes.map(complex => (
+                                            <ComplexCard 
+                                                key={complex.id} 
+                                                complex={complex} 
+                                                onSelect={handleComplexSelect}
+                                            />
+                                        ))
+                                    ) : (
+                                        filteredProperties.map(property => (
+                                            <PropertyCard 
+                                                key={property.id} 
+                                                property={property}
+                                                isSelected={selectedProperty?.id === property.id}
+                                                onSelect={handlePropertySelect}
+                                                onToggleSelection={togglePropertySelection}
+                                            />
+                                        ))
+                                    )}
+                                </div>
+
+                                {((viewMode === 'complexes' && filteredComplexes.length === 0) || 
+                                  (viewMode === 'properties' && filteredProperties.length === 0)) && (
+                                    <div className="text-center py-8 text-gray-500">
+                                        <div className="w-16 h-16 mx-auto mb-4 bg-gray-200 rounded-full flex items-center justify-center">
+                                            🏢
+                                        </div>
+                                        <p>Объекты не найдены</p>
+                                        <p className="text-sm">Попробуйте изменить параметры поиска</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Детали выбранного объекта */}
+                        {selectedProperty && (
+                            <div className="mt-6 bg-white rounded-lg shadow-md p-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <img 
+                                            src={selectedProperty.images[0]} 
+                                            alt={selectedProperty.title}
+                                            className="w-full h-64 object-cover rounded-lg"
+                                        />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-2xl font-bold mb-4" style={{color: '#C5A880'}}>
+                                            {selectedProperty.title}
+                                        </h2>
+                                        
+                                        <div className="grid grid-cols-2 gap-4 mb-4">
+                                            <div>
+                                                <p className="text-sm text-gray-600">Цена</p>
+                                                <p className="text-xl font-bold">€{selectedProperty.price.toLocaleString()}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-gray-600">Площадь</p>
+                                                <p className="text-xl font-bold">{selectedProperty.area.total} м²</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-gray-600">Комнаты</p>
+                                                <p className="text-xl font-bold">{selectedProperty.rooms}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-gray-600">До моря</p>
+                                                <p className="text-xl font-bold">{selectedProperty.distanceToSea} м</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="mb-4">
+                                            <p className="text-sm text-gray-600 mb-2">Местоположение</p>
+                                            <p className="font-medium">{selectedProperty.address.region}, {selectedProperty.address.area}</p>
+                                            <p className="text-sm text-gray-600">{selectedProperty.address.street}</p>
+                                        </div>
+
+                                        <div className="mb-4">
+                                            <p className="text-sm text-gray-600 mb-2">Застройщик</p>
+                                            <p className="font-medium">{selectedProperty.developer}</p>
+                                        </div>
+
+                                        <div className="mb-4">
+                                            <p className="text-sm text-gray-600 mb-2">Особенности</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {selectedProperty.features.map((feature, index) => (
+                                                    <span key={index} className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm">
+                                                        {feature}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => togglePropertySelection(selectedProperty.id)}
+                                                className={`flex-1 px-6 py-3 rounded-lg font-medium transition-colors ${
+                                                    selectedProperties.includes(selectedProperty.id)
+                                                        ? 'text-white'
+                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                }`}
+                                                style={selectedProperties.includes(selectedProperty.id) ? {backgroundColor: '#C5A880'} : {}}
+                                            >
+                                                {selectedProperties.includes(selectedProperty.id) ? '✓ В подборке' : 'Добавить в подборку'}
+                                            </button>
+                                            <button 
+                                                className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                                                onClick={() => alert('Функция связи с агентом в разработке')}
+                                            >
+                                                Связаться с агентом
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Статистика */}
+                        <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="bg-white p-4 rounded-lg shadow-md text-center">
+                                <div className="text-2xl font-bold" style={{color: '#C5A880'}}>
+                                    {realProperties.length}
+                                </div>
+                                <div className="text-sm text-gray-600">Всего объектов</div>
+                            </div>
+                            <div className="bg-white p-4 rounded-lg shadow-md text-center">
+                                <div className="text-2xl font-bold text-green-600">
+                                    {realProperties.filter(p => p.status === 'available').length}
+                                </div>
+                                <div className="text-sm text-gray-600">Доступно</div>
+                            </div>
+                            <div className="bg-white p-4 rounded-lg shadow-md text-center">
+                                <div className="text-2xl font-bold text-blue-600">
+                                    {realComplexes.length}
+                                </div>
+                                <div className="text-sm text-gray-600">Комплексов</div>
+                            </div>
+                            <div className="bg-white p-4 rounded-lg shadow-md text-center">
+                                <div className="text-2xl font-bold text-purple-600">
+                                    €{Math.round(realProperties.reduce((sum, p) => sum + p.price, 0) / realProperties.length / 1000)}K
+                                </div>
+                                <div className="text-sm text-gray-600">Средняя цена</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<CyprusPropertiesApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>
