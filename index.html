@@ -5,40 +5,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agent Portal</title>
     <style>
-        body { font-family: system-ui; max-width: 800px; margin: 0 auto; padding: 20px; }
-        .card { background: white; border-radius: 8px; padding: 20px; margin: 10px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .btn { display: inline-block; background: #C5A880; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 5px; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px; margin: 0 auto; padding: 40px 20px; 
+            background: #f9fafb; color: #374151;
+        }
+        .card { 
+            background: white; border-radius: 12px; padding: 30px; 
+            margin: 20px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+        }
+        .btn { 
+            display: inline-block; background: #C5A880; color: white; 
+            padding: 16px 32px; text-decoration: none; border-radius: 8px; 
+            margin: 8px; font-weight: 500; transition: background 0.2s;
+        }
         .btn:hover { background: #B8956B; }
+        .btn-new { background: #10B981; }
+        .btn-new:hover { background: #059669; }
+        .status { color: #059669; font-weight: 600; }
+        .new { color: #DC2626; font-weight: 600; }
     </style>
 </head>
 <body>
     <div class="card">
         <h1>🚀 Agent Portal</h1>
-        <p>Веб-портал для управления AI агентами и недвижимостью</p>
+        <p>Веб-портал для управления AI агентами и недвижимости на Кипре</p>
         
         <h3>📱 Доступные версии:</h3>
         
-        <a href="./cyprus-properties-demo.html" class="btn">
-            🏠 Демо портал недвижимости
-        </a>
+        <div style="margin: 20px 0;">
+            <a href="./react-demo.html" class="btn btn-new">
+                ⚛️ Modern React Version
+            </a>
+            <span class="new">🆕 НОВАЯ</span>
+        </div>
         
-        <a href="./react-app.html" class="btn">
-            ⚛️ Модульная React версия
-        </a>
-        
-        <a href="./docs/" class="btn">
-            📋 Документация
-        </a>
+        <div style="margin: 20px 0;">
+            <a href="./cyprus-properties-demo.html" class="btn">
+                🏠 Original Demo
+            </a>
+            <span class="status">✅ Стабильная</span>
+        </div>
     </div>
     
     <div class="card">
-        <h3>✨ Особенности модульной версии:</h3>
-        <ul>
-            <li>🗺 Интерактивная карта с Leaflet</li>
-            <li>🏠 Компоненты недвижимости</li>
-            <li>🔍 Система фильтров</li>
-            <li>📱 Адаптивный дизайн</li>
-            <li>⚛️ TypeScript + React</li>
+        <h3>✨ Modern React Version включает:</h3>
+        <ul style="line-height: 1.8;">
+            <li>⚛️ <strong>Модульные React компоненты</strong> с TypeScript</li>
+            <li>🗺 <strong>MapComponent</strong> с интерактивной картой Leaflet</li>
+            <li>🏠 <strong>PropertyCard</strong> компоненты недвижимости</li>
+            <li>🔍 <strong>FilterPanel</strong> с продвинутыми фильтрами</li>
+            <li>🎨 <strong>Современный дизайн</strong> с Tailwind CSS</li>
         </ul>
     </div>
 </body>
