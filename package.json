@@ -1,0 +1,20 @@
+{
+  "name": "agent-portal",
+  "version": "1.0.0",
+  "description": "Web portal for AI agents management and interaction",
+  "scripts": {
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "preview": "cd frontend && npm run preview",
+    "install:frontend": "cd frontend && npm install",
+    "install:backend": "cd backend && npm install",
+    "install:all": "npm run install:frontend && npm run install:backend"
+  },
+  "keywords": ["ai", "agents", "chatbot", "react", "nodejs", "typescript"],
+  "author": "cy-real-del",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cy-real-del/agent-portal.git"
+  }
+}
